@@ -51,6 +51,8 @@ Submissions not in this format will score zero on auto-graded questions.
 | Speed of submission    | 10 pts | <5 min=10, <10 min=8, <15 min=5, late=0         |
 | Q5 Executive Summary   | 5 pts  | Judge's discretion                              |
 
+Final results will be published as a ranked leaderboard.
+
 ### Recommended frameworks
 - CrewAI: pip install crewai
 - AutoGen: pip install pyautogen
