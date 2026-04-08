@@ -1,6 +1,6 @@
 Agentathon Output Format
 
-Participants must submit a plain text file named output.txt with exactly this structure:
+Participants must submit a plain text file named team-name.txt with exactly this structure:
 
 Q1: [your answer]
 Q2: [your answer]

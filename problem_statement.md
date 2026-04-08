@@ -13,7 +13,7 @@ and answer 5 business questions — completely autonomously, without any human i
 ### What will happen at the 3-hour mark
 - You will receive test_data.csv — 1,500 new rows of order data your agent has never seen
 - You must run your agent on this new file by only changing the file path
-- You have 15 minutes to submit output.txt
+- You have 15 minutes to submit team-name.txt
 - No code changes allowed after test data is released
 
 ### The 5 questions your agent must answer (applied to test data)
@@ -27,7 +27,7 @@ Q4: What is the return rate (%) per payment method? Rank highest to lowest and r
 Q5: Write a 3-sentence executive summary of the business health based on the data.
 
 ### Output format (MANDATORY)
-Your agent must produce a plain text file called output.txt with EXACTLY this format:
+Your agent must produce a plain text file called team-name.txt with EXACTLY this format:
   Q1: [your answer]
   Q2: [your answer]
   Q3: [your answer]

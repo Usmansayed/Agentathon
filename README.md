@@ -14,7 +14,7 @@ Welcome to the Agentathon hackathon.
 
 1. Read `problem_statement.md` completely.
 2. Build your agent using `train_data.csv`.
-3. Your agent must output a file called `output.txt` in the format shown in `output_format.txt`.
+3. Your agent must output a file called `team-name.txt` in the format shown in `output_format.txt`.
 4. At the 3-hour mark, you will receive new test data. Run your agent on it unchanged.
 
 ## Allowed tools
