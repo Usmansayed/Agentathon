@@ -42,17 +42,6 @@ Submissions not in this format will score zero on auto-graded questions.
 - For Q3 include all five counts.
 - For Q5 write exactly 3 sentences.
 
-### Judging criteria
-| Criterion              | Weight | How scored                                      |
-|------------------------|--------|-------------------------------------------------|
-| Accuracy (Q1–Q4)       | 40 pts | Auto-graded against answer key (10 pts each)    |
-| Autonomy               | 25 pts | Did agent run on test data without any changes? |
-| Agent Architecture     | 20 pts | Distinct agents, clear pipeline, tool design    |
-| Speed of submission    | 10 pts | <5 min=10, <10 min=8, <15 min=5, late=0         |
-| Q5 Executive Summary   | 5 pts  | Judge's discretion                              |
-
-Final results will be published as a ranked leaderboard.
-
 ### Recommended frameworks
 - CrewAI: pip install crewai
 - AutoGen: pip install pyautogen
