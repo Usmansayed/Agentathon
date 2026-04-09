@@ -17,22 +17,28 @@ and answer 5 business questions — completely autonomously, without any human i
 - No code changes allowed after test data is released
 
 ### The 5 questions your agent must answer (applied to test data)
-Q1: What is the total revenue per product category? Rank highest to lowest and report values.
-     Revenue = quantity × unit_price × (1 − discount_percent/100)
-Q2: Which customer region has the highest average delivery time? Rank all regions and report values.
-Q3: How many data quality issues exist in the raw data?
-     Count separately: duplicate order IDs, quantity outliers (>1000),
-     price format errors, invalid discounts, total null cells.
-Q4: What is the return rate (%) per payment method? Rank highest to lowest and report values.
-Q5: Write a 3-sentence executive summary of the business health based on the data.
+Q1: What is the total revenue per product category? Rank highest to lowest and
+report values. Revenue = quantity × unit_price ×
+(1 − discount_percent/100)
+Q2: Which customer region has the highest average delivery time? Rank all
+regions and report values.
+Q3: How many data quality issues exist in the raw data? Count separately:
+duplicate order IDs, quantity outliers (>1000), price format errors, invalid
+discounts, total null cells.
+Q4: What is the return rate (%) per payment method? Rank highest to lowest and
+report values.
+Q5: Write a 3-sentence executive summary of the business health based on the
+data.
 
 ### Output format (MANDATORY)
-Your agent must produce a plain text file called team-name.txt with EXACTLY this format:
-  Q1: [your answer]
-  Q2: [your answer]
-  Q3: [your answer]
-  Q4: [your answer]
-  Q5: [your answer]
+Your agent must produce a plain text file called team-name.txt with EXACTLY
+this format:
+
+Q1: [your answer]
+Q2: [your answer]
+Q3: [your answer]
+Q4: [your answer]
+Q5: [your answer]
 
 Submissions not in this format will score zero on auto-graded questions.
 
