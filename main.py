@@ -29,7 +29,18 @@ def build_llm(model_name: str, api_key_env: str, base_url_env: str) -> LLM:
     return LLM(model=model_name, api_key=api_key, base_url=base_url, temperature=0)
 
 
-def create_crew(data_path: str) -> Crew:
+def _resolve_model(
+    default_model: str,
+    use_fallback_models: bool,
+    fallback_env_name: str,
+    default_fallback_model: str,
+) -> str:
+    if not use_fallback_models:
+        return default_model
+    return os.getenv(fallback_env_name, "").strip() or default_fallback_model
+
+
+def create_crew(data_path: str, use_fallback_models: bool = False) -> Crew:
     duckdb_tool = DuckDBTool(data_path=data_path)
 
     manager = Agent(
@@ -40,7 +51,12 @@ def create_crew(data_path: str) -> Crew:
             "and ensure the final output is submission-ready."
         ),
         llm=build_llm(
-            model_name="deepseek/deepseek-v3.2-speciale",
+            model_name=_resolve_model(
+                default_model="deepseek/deepseek-v3.2-speciale",
+                use_fallback_models=use_fallback_models,
+                fallback_env_name="CKAI_FALLBACK_MODEL_MANAGER",
+                default_fallback_model="openai/gpt-5-mini",
+            ),
             api_key_env="CKAI_API_KEY_MANAGER",
             base_url_env="CKAI_BASE_URL_MANAGER",
         ),
@@ -53,7 +69,36 @@ def create_crew(data_path: str) -> Crew:
         goal="Use DuckDB SQL to compute reliable metrics from the dataset.",
         backstory="You are an expert in SQL analytics, data typing, and robust data quality checks.",
         llm=build_llm(
-            model_name="google/gemini-3-flash-preview",
+            model_name=_resolve_model(
+                default_model="google/gemini-3-flash-preview",
+                use_fallback_models=use_fallback_models,
+                fallback_env_name="CKAI_FALLBACK_MODEL_DATA_ENGINEER",
+                default_fallback_model="deepseek/deepseek-v3.2-speciale",
+            ),
+            api_key_env="CKAI_API_KEY_DATA_ENGINEER",
+            base_url_env="CKAI_BASE_URL_DATA_ENGINEER",
+        ),
+        tools=[duckdb_tool],
+        allow_delegation=False,
+        verbose=True,
+    )
+
+    data_cleaning_specialist = Agent(
+        role="Data Cleaning Specialist",
+        goal=(
+            "Audit raw dataset quality and establish cleaned-data readiness before analytics tasks run."
+        ),
+        backstory=(
+            "You are a practical data quality specialist. You identify noisy fields, "
+            "summarize risks, and ensure analytics uses normalized columns from `orders_clean`."
+        ),
+        llm=build_llm(
+            model_name=_resolve_model(
+                default_model="google/gemini-3-flash-preview",
+                use_fallback_models=use_fallback_models,
+                fallback_env_name="CKAI_FALLBACK_MODEL_DATA_CLEANING_SPECIALIST",
+                default_fallback_model="deepseek/deepseek-v3.2-speciale",
+            ),
             api_key_env="CKAI_API_KEY_DATA_ENGINEER",
             base_url_env="CKAI_BASE_URL_DATA_ENGINEER",
         ),
@@ -67,7 +112,12 @@ def create_crew(data_path: str) -> Crew:
         goal="Interpret analytical results and rank findings with business clarity.",
         backstory="You translate raw metrics into clear rankings and business signals.",
         llm=build_llm(
-            model_name="x-ai/grok-4.1-fast",
+            model_name=_resolve_model(
+                default_model="x-ai/grok-4.1-fast",
+                use_fallback_models=use_fallback_models,
+                fallback_env_name="CKAI_FALLBACK_MODEL_BUSINESS_ANALYST",
+                default_fallback_model="google/gemini-3-flash-preview",
+            ),
             api_key_env="CKAI_API_KEY_BUSINESS_ANALYST",
             base_url_env="CKAI_BASE_URL_BUSINESS_ANALYST",
         ),
@@ -81,12 +131,31 @@ def create_crew(data_path: str) -> Crew:
         goal="Create an exactly formatted final submission and concise executive summary.",
         backstory="You write concise executive outputs under strict formatting constraints.",
         llm=build_llm(
-            model_name="openai/gpt-5-mini",
+            model_name=_resolve_model(
+                default_model="openai/gpt-5-mini",
+                use_fallback_models=use_fallback_models,
+                fallback_env_name="CKAI_FALLBACK_MODEL_EXECUTIVE_REPORTER",
+                default_fallback_model="x-ai/grok-4.1-fast",
+            ),
             api_key_env="CKAI_API_KEY_EXECUTIVE_REPORTER",
             base_url_env="CKAI_BASE_URL_EXECUTIVE_REPORTER",
         ),
         allow_delegation=False,
         verbose=True,
+    )
+
+    cleaning_task = Task(
+        description=(
+            "Run a pre-analysis data cleaning audit using DuckDB on `orders` and `orders_clean`. "
+            "Report concise cleaning-readiness findings: total rows, null hotspots, non-numeric "
+            "coercion impact for quantity/unit_price/discount_percent/delivery_days, and whether "
+            "normalized fields in `orders_clean` are suitable for downstream analytics. "
+            "Keep output compact and action-oriented."
+        ),
+        expected_output=(
+            "Compact data-cleaning readiness report with key counts and practical notes for downstream tasks."
+        ),
+        agent=data_cleaning_specialist,
     )
 
     q1_task = Task(
@@ -99,6 +168,7 @@ def create_crew(data_path: str) -> Crew:
         ),
         expected_output="Ranked category revenue list with category and total revenue values.",
         agent=data_engineer,
+        context=[cleaning_task],
     )
 
     q2_task = Task(
@@ -109,7 +179,7 @@ def create_crew(data_path: str) -> Crew:
         ),
         expected_output="Ranked region average delivery-time list.",
         agent=data_engineer,
-        context=[q1_task],
+        context=[cleaning_task, q1_task],
     )
 
     q3_task = Task(
@@ -124,6 +194,7 @@ def create_crew(data_path: str) -> Crew:
             "price_format_errors, invalid_discounts, total_nulls."
         ),
         agent=data_engineer,
+        context=[cleaning_task],
     )
 
     q4_task = Task(
@@ -134,7 +205,7 @@ def create_crew(data_path: str) -> Crew:
         ),
         expected_output="Ranked payment-method return-rate list in percentages.",
         agent=business_analyst,
-        context=[q1_task, q2_task, q3_task],
+        context=[cleaning_task, q1_task, q2_task, q3_task],
     )
 
     q5_task = Task(
@@ -144,7 +215,7 @@ def create_crew(data_path: str) -> Crew:
         ),
         expected_output="Exactly 3 sentences executive summary.",
         agent=executive_reporter,
-        context=[q1_task, q2_task, q3_task, q4_task],
+        context=[cleaning_task, q1_task, q2_task, q3_task, q4_task],
     )
 
     final_task = Task(
@@ -159,12 +230,12 @@ def create_crew(data_path: str) -> Crew:
         ),
         expected_output="Final 5-line plain text content that strictly follows required labels and ordering.",
         agent=manager,
-        context=[q1_task, q2_task, q3_task, q4_task, q5_task],
+        context=[cleaning_task, q1_task, q2_task, q3_task, q4_task, q5_task],
     )
 
     return Crew(
-        agents=[data_engineer, business_analyst, executive_reporter],
-        tasks=[q1_task, q2_task, q3_task, q4_task, q5_task, final_task],
+        agents=[data_cleaning_specialist, data_engineer, business_analyst, executive_reporter],
+        tasks=[cleaning_task, q1_task, q2_task, q3_task, q4_task, q5_task, final_task],
         process=Process.hierarchical,
         manager_agent=manager,
         verbose=True,
@@ -372,22 +443,20 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main() -> None:
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    if hasattr(sys.stderr, "reconfigure"):
-        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+def run_crew(
+    data_path: str = DATA_PATH,
+    output_file: str = OUTPUT_FILE,
+    fallback_only: bool = False,
+) -> dict[str, str | bool]:
+    data_path_obj = Path(data_path)
+    if not data_path_obj.exists():
+        raise FileNotFoundError(f"DATA_PATH does not exist: {data_path_obj}")
 
-    load_dotenv()
-    args = parse_args()
-
-    data_path = Path(args.data_path)
-    if not data_path.exists():
-        raise FileNotFoundError(f"DATA_PATH does not exist: {data_path}")
-
-    fallback = _fallback_answers(str(data_path.resolve()))
+    fallback = _fallback_answers(str(data_path_obj.resolve()))
     text_result = ""
-    if args.fallback_only:
+    used_fallback_models = False
+
+    if fallback_only:
         formatted = "\n".join(
             [
                 f"Q1: {fallback['Q1']}",
@@ -398,16 +467,44 @@ def main() -> None:
             ]
         )
     else:
-        crew = create_crew(str(data_path))
-        result = crew.kickoff()
-        text_result = str(result)
+        try:
+            crew = create_crew(str(data_path_obj), use_fallback_models=False)
+            result = crew.kickoff()
+            text_result = str(result)
+        except Exception as primary_exc:  # noqa: BLE001 - fallback retry guard
+            print(f"Primary model run failed: {type(primary_exc).__name__}: {primary_exc}")
+            print("Retrying with fallback model assignments...")
+            used_fallback_models = True
+            crew = create_crew(str(data_path_obj), use_fallback_models=True)
+            result = crew.kickoff()
+            text_result = str(result)
         formatted = _build_strict_output(text_result, fallback)
 
-    output_path = Path(args.output_file)
+    output_path = Path(output_file)
     output_path.write_text(formatted + "\n", encoding="utf-8")
-    print(f"Wrote submission file: {output_path.resolve()}")
+    return {
+        "formatted_output": formatted,
+        "output_file": str(output_path.resolve()),
+        "used_fallback_models": used_fallback_models,
+    }
+
+
+def main() -> None:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+    load_dotenv()
+    args = parse_args()
+    run_result = run_crew(
+        data_path=args.data_path,
+        output_file=args.output_file,
+        fallback_only=args.fallback_only,
+    )
+    print(f"Wrote submission file: {run_result['output_file']}")
     print("-----")
-    print(formatted)
+    print(run_result["formatted_output"])
 
 
 if __name__ == "__main__":

@@ -1,3 +1,5 @@
 crewai[litellm]
 duckdb
 python-dotenv
+streamlit
+pandas

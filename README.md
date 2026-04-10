@@ -16,7 +16,7 @@ Install dependencies from:
 
 ## Current Agent Architecture
 
-The implementation is defined in `main.py` and uses 4 agents:
+The implementation is defined in `main.py` and uses 5 agents:
 
 1. **Manager**
    - Role: Orchestrates specialists and composes final output
@@ -33,10 +33,16 @@ The implementation is defined in `main.py` and uses 4 agents:
 4. **Executive Reporter**
    - Role: Produces concise executive-ready narrative
    - Model slot: `openai/gpt-5-mini`
+5. **Data Cleaning Specialist**
+   - Role: Runs a pre-analysis data quality/cleaning-readiness audit
+   - Tooling: `DuckDBTool`
+   - Model slot: `google/gemini-3-flash-preview`
 
 ## Agent Workflow (Q1-Q5)
 
-The crew executes six tasks in hierarchical mode:
+The crew executes seven tasks in hierarchical mode:
+
+- `cleaning_task` pre-analysis audit (runs first)
 
 - `Q1` category revenue ranking (using cleaned numeric fields)
 - `Q2` regional average delivery-time ranking
@@ -75,6 +81,7 @@ Agents can run SQL through `duckdb_sql_runner`, and SQL errors are intentionally
 
 The code is designed to be robust for unseen test CSVs:
 
+- Automatic model fallback retry: if primary CrewAI kickoff fails, the run retries with fallback model assignments
 - Deterministic fallback computation (`_fallback_answers`) for all Q1-Q5
 - Strict post-processing of model output (`_build_strict_output`)
 - Missing/malformed sections are auto-replaced with fallback answers
@@ -93,6 +100,14 @@ Copy `.env.example` to `.env` and fill all variables:
 - `CKAI_API_KEY_BUSINESS_ANALYST`
 - `CKAI_BASE_URL_EXECUTIVE_REPORTER`
 - `CKAI_API_KEY_EXECUTIVE_REPORTER`
+
+Optional fallback-model override vars (used only during auto-retry after a primary model failure):
+
+- `CKAI_FALLBACK_MODEL_MANAGER`
+- `CKAI_FALLBACK_MODEL_DATA_ENGINEER`
+- `CKAI_FALLBACK_MODEL_DATA_CLEANING_SPECIALIST`
+- `CKAI_FALLBACK_MODEL_BUSINESS_ANALYST`
+- `CKAI_FALLBACK_MODEL_EXECUTIVE_REPORTER`
 
 ## How to Run
 
