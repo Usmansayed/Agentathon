@@ -1,0 +1,5 @@
+Q1: category | total_revenue Books | 217853737.61780494 Beauty | 170873504.6343941 Home & Kitchen | 156498482.46878293  | 131882135.76196203 Sports | 95998145.24847998 Clothing | 83529039.06031403 Groceries | 22712346.816187013 Electronics | 20270883.701705
+Q2: region | avg_delivery_time South | 12.692446043165468 East | 12.691605839416058  | 8.38996138996139 North | 5.7936 West | 5.75748031496063 Central | 5.401015228426396
+Q3: 68, 12, 22, 19, 1976
+Q4: Payment method return rates cannot be calculated; required payment_method column is missing from the dataset.
+Q5: 1. Books, Beauty, and Home & Kitchen drive 68% of total revenue, with Books leading at ₹217.85 million. 2.

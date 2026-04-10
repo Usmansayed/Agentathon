@@ -1,0 +1,5 @@
+Q1: category | total_revenue
+Q2: region | avg_delivery_time
+Q3: duplicates: 68, quantity_outliers: 12, price_format_errors: 22, invalid_discounts: 19, total_nulls: 1413
+Q4: payment_method | return_rate
+Q5: Central region drives highest revenue (₹219.92M), followed by East (₹178.85M) and North (₹178.45M), while South (12.69-day average delivery) and East (12.69 days) face significant delivery delays compared to Central (5.40 days). Data quality issues include 68 duplicate orders, 1,413 null cells, and 22 non-numeric price entries, risking analytical accuracy. All payment methods show 0% return rates, suggesting either perfect order fulfillment or potential underreporting of returns in the dataset.
