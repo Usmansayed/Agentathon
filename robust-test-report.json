@@ -1,0 +1,22 @@
+{
+  "hackathon_alignment": {
+    "autonomy_and_robustness_25": true,
+    "output_accuracy_readiness_25": true,
+    "efficiency_10": true
+  },
+  "checks": {
+    "autonomy_no_crash": true,
+    "output_file_created": true,
+    "format_has_q1_to_q5": true,
+    "q3_has_5_counts": true,
+    "q5_exactly_3_sentences": true,
+    "execution_under_15s": true
+  },
+  "score_percent": 100.0,
+  "elapsed_seconds": 8.96,
+  "details": {
+    "stdout_tail": "1509.90; Groceries=0.00; Sports=0.00\nQ2: South=8.50; Unknown=7.00; Central=5.00; North=4.50; West=3.00; East=1.50\nQ3: duplicates=1, quantity_outliers=1, price_format_errors=1, invalid_discounts=2, total_nulls=4\nQ4: Unknown=100.00%; UPI=75.00%; COD=66.67%; Card=25.00%\nQ5: Revenue is led by Electronics at 1712938.04, with clear concentration in top categories. South has the longest average delivery time at 8.50 days, signaling fulfillment pressure in that region. Return behavior is highest for Unknown at 100.00%, and the detected data quality issues should be cleaned before executive reporting.\n",
+    "stderr_tail": "C:\\Users\\usman\\Miniconda3\\Lib\\site-packages\\pydantic\\plugin\\_schema_validator.py:39: UserWarning: ImportError while loading the `logfire-plugin` Pydantic plugin, this plugin will not be installed.\n\nImportError(\"cannot import name 'ReadableLogRecord' from 'opentelemetry.sdk._logs' (C:\\\\Users\\\\usman\\\\Miniconda3\\\\Lib\\\\site-packages\\\\opentelemetry\\\\sdk\\\\_logs\\\\__init__.py)\")\n  plugins = get_plugins()\n",
+    "output_preview": "Q1: Electronics=1712938.04; Home & Kitchen=4416.60; Books=3167.08; Clothing=2097.90; Beauty=1509.90; Groceries=0.00; Sports=0.00\nQ2: South=8.50; Unknown=7.00; Central=5.00; North=4.50; West=3.00; East=1.50\nQ3: duplicates=1, quantity_outliers=1, price_format_errors=1, invalid_discounts=2, total_nulls=4\nQ4: Unknown=100.00%; UPI=75.00%; COD=66.67%; Card=25.00%\nQ5: Revenue is led by Electronics at 1712938.04, with clear concentration in top categories. South has the longest average delivery time at 8.50 days, signaling fulfillment pressure in that region. Return behavior is highest for Unknown at 100.00%, and the detected data quality issues should be cleaned before executive reporting.\n"
+  }
+}

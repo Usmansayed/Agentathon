@@ -1,0 +1,5 @@
+Q1: Electronics=1712938.04; Home & Kitchen=4416.60; Books=3167.08; Clothing=2097.90; Beauty=1509.90; Groceries=0.00; Sports=0.00
+Q2: South=8.50; Unknown=7.00; Central=5.00; North=4.50; West=3.00; East=1.50
+Q3: duplicates=1, quantity_outliers=1, price_format_errors=1, invalid_discounts=2, total_nulls=4
+Q4: Unknown=100.00%; UPI=75.00%; COD=66.67%; Card=25.00%
+Q5: Revenue is led by Electronics at 1712938.04, with clear concentration in top categories. South has the longest average delivery time at 8.50 days, signaling fulfillment pressure in that region. Return behavior is highest for Unknown at 100.00%, and the detected data quality issues should be cleaned before executive reporting.

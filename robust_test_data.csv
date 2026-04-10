@@ -1,0 +1,13 @@
+order_id,date,product_category,product_name,quantity,unit_price,discount_percent,customer_region,payment_method,delivery_days,return_status
+ORD-001,2026-01-01,Books,Novel A,2,500,10,North,UPI,4,returned
+ORD-001,2026-01-02,Books,Novel A,1,500,10,North,UPI,6,not_returned
+ORD-002,2026-01-03,Electronics,Headphones,1500,1200,5,South,Card,8,returned
+ORD-003,2026-01-03,Beauty,Serum,3,799,120,East,COD,3,not_returned
+ORD-004,2026-01-04,Groceries,Rice,5,abc,2,West,UPI,2,returned
+ORD-005,2026-01-05,Clothing,T-Shirt,2,999,-5,Central,Card,5,not_returned
+ORD-006,2026-01-06,Home & Kitchen,Pan,4,1299,15,,COD,7,returned
+ORD-007,2026-01-07,Sports,Ball,,599,5,North,UPI,3,returned
+ORD-008,2026-01-08,Books,Notebook,10,99,0,East,Card,,not_returned
+ORD-009,2026-01-09,Beauty,Lotion,6,349,5,South,,9,returned
+ORD-010,2026-01-10,Electronics,Mouse,2,1499,2,West,Card,4,not_returned
+ORD-011,2026-01-10,Books,Guide,1,899,8,North,COD,5,returned

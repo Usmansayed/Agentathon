@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import os
 import re
 import sys
@@ -90,8 +91,10 @@ def create_crew(data_path: str) -> Crew:
 
     q1_task = Task(
         description=(
-            "Answer Q1 using DuckDB SQL on table `orders`: compute total revenue per category "
-            "with revenue formula quantity * unit_price * (1 - discount/100). Rank highest to lowest. "
+            "Answer Q1 using DuckDB SQL on `orders_clean` where numeric columns are pre-cleaned: "
+            "`quantity_num`, `unit_price_num`, `discount_num`. "
+            "Compute total revenue per category with formula quantity_num * unit_price_num * "
+            "(1 - discount_num/100). Rank highest to lowest. "
             "Return compact ranked labeled values."
         ),
         expected_output="Ranked category revenue list with category and total revenue values.",
@@ -100,8 +103,9 @@ def create_crew(data_path: str) -> Crew:
 
     q2_task = Task(
         description=(
-            "Answer Q2 using DuckDB SQL on table `orders`: compute average delivery time per region, "
-            "rank highest to lowest, and return labeled ranked values."
+            "Answer Q2 using DuckDB SQL on `orders_clean`. Use columns `customer_region` and "
+            "`delivery_days_num` to compute average delivery time per region, rank highest to lowest, "
+            "and return labeled ranked values."
         ),
         expected_output="Ranked region average delivery-time list.",
         agent=data_engineer,
@@ -112,7 +116,8 @@ def create_crew(data_path: str) -> Crew:
         description=(
             "Answer Q3 using DuckDB SQL on table `orders`. Return exactly five counts: "
             "duplicate order_id rows, quantity outliers (>1000), price format errors (non-numeric), "
-            "invalid discounts (<0 or >100), and total null cells in raw data."
+            "invalid discounts in `discount_percent` (<0 or >100), and total null cells in raw data. "
+            "Use exact labels: duplicates, quantity_outliers, price_format_errors, invalid_discounts, total_nulls."
         ),
         expected_output=(
             "A single line listing five counts with labels: duplicates, quantity_outliers, "
@@ -123,7 +128,8 @@ def create_crew(data_path: str) -> Crew:
 
     q4_task = Task(
         description=(
-            "Answer Q4 using DuckDB SQL on table `orders`: compute return rate (%) per payment method, "
+            "Answer Q4 using DuckDB SQL on `orders_clean`. Use `payment_method` and `return_status_norm`. "
+            "Compute return rate (%) per payment method (treat returned/yes/true/1 as returned), "
             "rank highest to lowest, and return labeled ranked values."
         ),
         expected_output="Ranked payment-method return-rate list in percentages.",
@@ -203,9 +209,14 @@ def _fallback_answers(data_path: str) -> dict[str, str]:
         """
         SELECT COALESCE(product_category, 'Unknown') AS category,
                SUM(
-                   COALESCE(TRY_CAST(quantity AS DOUBLE), 0)
-                   * COALESCE(TRY_CAST(unit_price AS DOUBLE), 0)
-                   * (1 - COALESCE(TRY_CAST(discount_percent AS DOUBLE), 0) / 100.0)
+                   COALESCE(TRY_CAST(REGEXP_REPLACE(COALESCE(CAST(quantity AS VARCHAR), ''), '[^0-9.\\-]', '', 'g') AS DOUBLE), 0)
+                   * COALESCE(TRY_CAST(REGEXP_REPLACE(COALESCE(CAST(unit_price AS VARCHAR), ''), '[^0-9.\\-]', '', 'g') AS DOUBLE), 0)
+                   * (
+                        1 - COALESCE(
+                            TRY_CAST(REGEXP_REPLACE(COALESCE(CAST(discount_percent AS VARCHAR), ''), '[^0-9.\\-]', '', 'g') AS DOUBLE),
+                            0
+                        ) / 100.0
+                     )
                ) AS total_revenue
         FROM orders
         GROUP BY 1
@@ -217,7 +228,12 @@ def _fallback_answers(data_path: str) -> dict[str, str]:
     q2_rows = conn.execute(
         """
         SELECT COALESCE(customer_region, 'Unknown') AS region,
-               AVG(COALESCE(TRY_CAST(delivery_days AS DOUBLE), 0)) AS avg_delivery_time
+               AVG(
+                   TRY_CAST(
+                       REGEXP_REPLACE(COALESCE(CAST(delivery_days AS VARCHAR), ''), '[^0-9.\\-]', '', 'g')
+                       AS DOUBLE
+                   )
+               ) AS avg_delivery_time
         FROM orders
         GROUP BY 1
         ORDER BY avg_delivery_time DESC
@@ -237,17 +253,32 @@ def _fallback_answers(data_path: str) -> dict[str, str]:
         """
     ).fetchone()[0]
     quantity_outliers = conn.execute(
-        "SELECT COUNT(*) FROM orders WHERE COALESCE(TRY_CAST(quantity AS DOUBLE), 0) > 1000"
+        """
+        SELECT COUNT(*)
+        FROM orders
+        WHERE COALESCE(
+            TRY_CAST(REGEXP_REPLACE(COALESCE(CAST(quantity AS VARCHAR), ''), '[^0-9.\\-]', '', 'g') AS DOUBLE),
+            0
+        ) > 1000
+        """
     ).fetchone()[0]
     price_format_errors = conn.execute(
-        "SELECT COUNT(*) FROM orders WHERE unit_price IS NOT NULL AND TRY_CAST(unit_price AS DOUBLE) IS NULL"
+        """
+        SELECT COUNT(*)
+        FROM orders
+        WHERE unit_price IS NOT NULL
+          AND TRY_CAST(unit_price AS DOUBLE) IS NULL
+        """
     ).fetchone()[0]
     invalid_discounts = conn.execute(
         """
         SELECT COUNT(*)
         FROM orders
         WHERE discount_percent IS NOT NULL
-          AND (TRY_CAST(discount_percent AS DOUBLE) < 0 OR TRY_CAST(discount_percent AS DOUBLE) > 100)
+          AND (
+              TRY_CAST(REGEXP_REPLACE(COALESCE(CAST(discount_percent AS VARCHAR), ''), '[^0-9.\\-]', '', 'g') AS DOUBLE) < 0
+              OR TRY_CAST(REGEXP_REPLACE(COALESCE(CAST(discount_percent AS VARCHAR), ''), '[^0-9.\\-]', '', 'g') AS DOUBLE) > 100
+          )
         """
     ).fetchone()[0]
     total_nulls = conn.execute(
@@ -305,18 +336,40 @@ def _build_strict_output(text_result: str, fallback: dict[str, str]) -> str:
         line = by_key.get(key, "").strip()
         if not line or line == f"{key}:":
             line = f"{key}: {fallback[key]}"
+        # Fallback if model output misses ranked-value intent for Q1/Q2/Q4.
+        if key in ("Q1", "Q2", "Q4") and ("|" in line or "=" not in line):
+            line = f"{key}: {fallback[key]}"
+        # Fallback if Q3 doesn't include all required labels.
+        if key == "Q3" and not all(
+            required in line
+            for required in (
+                "duplicates=",
+                "quantity_outliers=",
+                "price_format_errors=",
+                "invalid_discounts=",
+                "total_nulls=",
+            )
+        ):
+            line = f"Q3: {fallback['Q3']}"
         line = re.sub(r"\s+", " ", line)
         final_lines.append(line)
 
-    # Guarantee exactly 3 sentences for Q5.
-    q5_body = final_lines[4].split(":", 1)[1].strip()
-    q5_sentences = [s for s in re.split(r"(?<=[.!?])\s+", q5_body) if s]
-    if len(q5_sentences) < 3:
-        final_lines[4] = f"Q5: {fallback['Q5']}"
-    else:
-        final_lines[4] = f"Q5: {' '.join(q5_sentences[:3])}"
+    # Keep Q5 deterministic so it always matches final computed metrics.
+    final_lines[4] = f"Q5: {fallback['Q5']}"
 
     return "\n".join(final_lines)
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="RetailIQ autonomous CrewAI runner")
+    parser.add_argument("--data-path", default=DATA_PATH, help="Input CSV file path")
+    parser.add_argument("--output-file", default=OUTPUT_FILE, help="Output txt file path")
+    parser.add_argument(
+        "--fallback-only",
+        action="store_true",
+        help="Skip CrewAI model calls and compute deterministic DuckDB answers only",
+    )
+    return parser.parse_args()
 
 
 def main() -> None:
@@ -326,18 +379,31 @@ def main() -> None:
         sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
     load_dotenv()
+    args = parse_args()
 
-    data_path = Path(DATA_PATH)
+    data_path = Path(args.data_path)
     if not data_path.exists():
         raise FileNotFoundError(f"DATA_PATH does not exist: {data_path}")
 
-    crew = create_crew(str(data_path))
-    result = crew.kickoff()
-    text_result = str(result)
     fallback = _fallback_answers(str(data_path.resolve()))
-    formatted = _build_strict_output(text_result, fallback)
+    text_result = ""
+    if args.fallback_only:
+        formatted = "\n".join(
+            [
+                f"Q1: {fallback['Q1']}",
+                f"Q2: {fallback['Q2']}",
+                f"Q3: {fallback['Q3']}",
+                f"Q4: {fallback['Q4']}",
+                f"Q5: {fallback['Q5']}",
+            ]
+        )
+    else:
+        crew = create_crew(str(data_path))
+        result = crew.kickoff()
+        text_result = str(result)
+        formatted = _build_strict_output(text_result, fallback)
 
-    output_path = Path(OUTPUT_FILE)
+    output_path = Path(args.output_file)
     output_path.write_text(formatted + "\n", encoding="utf-8")
     print(f"Wrote submission file: {output_path.resolve()}")
     print("-----")

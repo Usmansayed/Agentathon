@@ -1,5 +1,5 @@
-Q1: category | total_revenue
-Q2: region | avg_delivery_time
-Q3: duplicates: 68, quantity_outliers: 12, price_format_errors: 22, invalid_discounts: 19, total_nulls: 1413
-Q4: payment_method | return_rate
-Q5: Central region drives highest revenue (₹219.92M), followed by East (₹178.85M) and North (₹178.45M), while South (12.69-day average delivery) and East (12.69 days) face significant delivery delays compared to Central (5.40 days). Data quality issues include 68 duplicate orders, 1,413 null cells, and 22 non-numeric price entries, risking analytical accuracy. All payment methods show 0% return rates, suggesting either perfect order fulfillment or potential underreporting of returns in the dataset.
+Q1: Books=220560596.93; Beauty=173445745.37; Home & Kitchen=158965072.60; Electronics=145112866.52; Unknown=133212073.25; Sports=98056426.67; Clothing=85360534.54; Groceries=25448791.81
+Q2: South=12.69; East=12.69; Unknown=8.39; North=5.79; West=5.76; Central=5.40
+Q3: duplicates=68, quantity_outliers=12, price_format_errors=22, invalid_discounts=19, total_nulls=2795
+Q4: UPI=10.61%; Credit Card=10.04%; Unknown=10.00%; Debit Card=9.81%; Net Banking=9.14%; Cash on Delivery=8.71%
+Q5: Revenue is led by Books at 220560596.93, with clear concentration in top categories. South has the longest average delivery time at 12.69 days, signaling fulfillment pressure in that region. Return behavior is highest for UPI at 10.61%, and the detected data quality issues should be cleaned before executive reporting.
